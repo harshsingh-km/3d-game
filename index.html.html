@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Car Race 3D - Web Version</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; background: #111; font-family: Arial, sans-serif; overflow: hidden; }
+    #menu {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9); color: #fff;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 10;
+    }
+    h1 { font-size: 36px; margin-bottom: 20px; }
+    select, button {
+      padding: 10px 20px;
+      font-size: 18px;
+      margin: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+    button {
+      background-color: #ff1744;
+      color: #fff;
+      cursor: pointer;
+    }
+    canvas {
+      display: block;
+      background: linear-gradient(to bottom, #444, #111);
+    }
+  </style>
+</head>
+<body>
+
+<div id="menu">
+  <h1>🚗 Car Race 3D</h1>
+  <label>Select Car Color:
+    <select id="carColor">
+      <option value="red">Red</option>
+      <option value="blue">Blue</option>
+      <option value="lime">Green</option>
+    </select>
+  </label>
+  <button onclick="startGame()">Start Race</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  let carColor = "red";
+  let roadLines = [];
+  let enemies = [];
+  let carX = canvas.width / 2, carY = canvas.height - 150;
+  let speed = 5, score = 0, isRunning = false, carLane = 1;
+
+  const lanePositions = [
+    canvas.width / 2 - 120,
+    canvas.width / 2,
+    canvas.width / 2 + 120
+  ];
+
+  function startGame() {
+    carColor = document.getElementById("carColor").value;
+    document.getElementById("menu").style.display = "none";
+    isRunning = true;
+    roadLines = [];
+    enemies = [];
+    score = 0;
+    speed = 5;
+    spawnRoadLines();
+    spawnEnemies();
+    requestAnimationFrame(gameLoop);
+  }
+
+  function spawnRoadLines() {
+    for (let i = 0; i < 20; i++) {
+      roadLines.push({ y: i * 60 });
+    }
+  }
+
+  function spawnEnemies() {
+    for (let i = 0; i < 3; i++) {
+      enemies.push({
+        lane: Math.floor(Math.random() * 3),
+        y: -i * 300 - 200,
+        speed: speed * (0.8 + Math.random() * 0.4)
+      });
+    }
+  }
+
+  function drawBackground() {
+    ctx.fillStyle = "#222";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function drawRoad() {
+    ctx.fillStyle = "#444";
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2 - 180, 0);
+    ctx.lineTo(canvas.width / 2 + 180, 0);
+    ctx.lineTo(canvas.width / 2 + 100, canvas.height);
+    ctx.lineTo(canvas.width / 2 - 100, canvas.height);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 4;
+    roadLines.forEach(line => {
+      ctx.beginPath();
+      const x1 = canvas.width / 2 - 5;
+      const x2 = canvas.width / 2 + 5;
+      ctx.moveTo(x1, line.y);
+      ctx.lineTo(x2, line.y + 40);
+      ctx.stroke();
+    });
+  }
+
+  function drawPlayerCar() {
+    const x = lanePositions[carLane];
+    ctx.fillStyle = carColor;
+    ctx.fillRect(x - 25, carY, 50, 100);
+  }
+
+  function drawEnemies() {
+    enemies.forEach(enemy => {
+      const x = lanePositions[enemy.lane];
+      ctx.fillStyle = "yellow";
+      ctx.fillRect(x - 25, enemy.y, 50, 100);
+    });
+  }
+
+  function updateRoadLines() {
+    for (let line of roadLines) {
+      line.y += speed;
+      if (line.y > canvas.height) line.y = -60;
+    }
+  }
+
+  function updateEnemies() {
+    for (let enemy of enemies) {
+      enemy.y += enemy.speed;
+      if (enemy.y > canvas.height + 100) {
+        enemy.y = -200;
+        enemy.lane = Math.floor(Math.random() * 3);
+        score += 10;
+        speed += 0.05;
+      }
+
+      // Collision
+      if (enemy.lane === carLane && enemy.y > carY - 80 && enemy.y < carY + 100) {
+        gameOver();
+      }
+    }
+  }
+
+  function drawScore() {
+    ctx.fillStyle = "white";
+    ctx.font = "24px sans-serif";
+    ctx.fillText(`Score: ${score}`, 20, 30);
+  }
+
+  function gameOver() {
+    isRunning = false;
+    alert("💥 Crash! Game Over\nScore: " + score);
+    window.location.reload();
+  }
+
+  function gameLoop() {
+    if (!isRunning) return;
+
+    drawBackground();
+    drawRoad();
+    drawPlayerCar();
+    drawEnemies();
+    drawScore();
+
+    updateRoadLines();
+    updateEnemies();
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  // Controls
+  window.addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft" && carLane > 0) carLane--;
+    if (e.key === "ArrowRight" && carLane < 2) carLane++;
+  });
+
+</script>
+</body>
+</html>
